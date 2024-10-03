@@ -136,11 +136,19 @@ resource "aws_instance" "frontend_instance" {
   subnet_id              = aws_subnet.public_subnet.id
   vpc_security_group_ids = [aws_security_group.web_sg.id]
 
-  # Volume SSD de 5 GiB
+  # Volume SSD de 3 GiB
   root_block_device {
     volume_type = "gp3"  # Tipo de volume SSD
-    volume_size = 5      # Tamanho do volume em GiB
+    volume_size = 3      # Tamanho do volume em GiB
   }
+
+  # Script de inicialização para montar o EFS
+  user_data = <<-EOF
+              #!/bin/bash
+              yum install -y amazon-efs-utils
+              mkdir /mnt/efs
+              mount -t efs ${aws_efs_file_system.example.id}:/ /mnt/efs
+              EOF
 
   tags = {
     Name = "Frontend-EC2-Instance"
@@ -153,6 +161,14 @@ resource "aws_instance" "backend_instance" {
   instance_type          = "t2.micro"              # Tipo da instância
   subnet_id              = aws_subnet.private_subnet.id
   vpc_security_group_ids = [aws_security_group.web_sg.id]
+
+  # Script de inicialização para montar o EFS
+  user_data = <<-EOF
+              #!/bin/bash
+              yum install -y amazon-efs-utils
+              mkdir /mnt/efs
+              mount -t efs ${aws_efs_file_system.example.id}:/ /mnt/efs
+              EOF
 
   tags = {
     Name = "Backend-EC2-Instance"
@@ -172,10 +188,10 @@ resource "aws_s3_bucket" "image_bucket" {
 resource "aws_s3_bucket_public_access_block" "image_bucket_public_access" {
   bucket = aws_s3_bucket.image_bucket.id
 
-  block_public_acls        = true
-  block_public_policy      = true
-  restrict_public_buckets  = true
-  ignore_public_acls       = true
+  block_public_acls        = true  # Bloquear ACLs públicas
+  block_public_policy      = true  # Bloquear políticas públicas
+  restrict_public_buckets  = true  # Restringir buckets públicos
+  ignore_public_acls       = true  # Ignorar ACLs públicas
 }
 
 # 15. Definir política de bucket S3 para permitir upload privado
@@ -211,6 +227,38 @@ resource "aws_s3_object" "example_image" {
   }
 }
 
+# 17. Criar Sistema de Arquivos EFS
+resource "aws_efs_file_system" "example" {
+  encrypted = true  # Criptografar o sistema de arquivos
+
+  tags = {
+    Name = "Main-EFS"
+  }
+}
+
+# 18. Criar Mount Targets para o EFS
+resource "aws_efs_mount_target" "public_mount_target" {
+  file_system_id  = aws_efs_file_system.example.id
+  subnet_id       = aws_subnet.public_subnet.id
+  security_groups = [aws_security_group.web_sg.id]
+}
+
+resource "aws_efs_mount_target" "private_mount_target" {
+  file_system_id  = aws_efs_file_system.example.id
+  subnet_id       = aws_subnet.private_subnet.id
+  security_groups = [aws_security_group.web_sg.id]
+}
+
+# 19. Regras para permitir NFS (porta 2049)
+resource "aws_security_group_rule" "allow_efs_nfs" {
+  type              = "ingress"
+  from_port         = 2049
+  to_port           = 2049
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.web_sg.id
+}
+
 # ACL para Sub-rede Pública
 resource "aws_network_acl" "public_acl" {
   vpc_id = aws_vpc.vpc_main.id
@@ -235,49 +283,21 @@ resource "aws_network_acl_rule" "http_inbound" {
 resource "aws_network_acl_rule" "https_inbound" {
   network_acl_id = aws_network_acl.public_acl.id
   rule_number    = 110
-  egress         = false
+  egress         = false  # Ingress (entrada)
   protocol       = "tcp"
   rule_action    = "allow"
-  cidr_block     = "0.0.0.0/0"
+  cidr_block     = "0.0.0.0/0"  # Permitir de qualquer origem
   from_port      = 443
   to_port        = 443
 }
 
-resource "aws_network_acl_rule" "outbound_allow" {
+resource "aws_network_acl_rule" "ephemeral_outbound" {
   network_acl_id = aws_network_acl.public_acl.id
-  rule_number    = 200
-  egress         = true  # Egress (saída)
-  protocol       = "-1"  # Todos os protocolos
-  rule_action    = "allow"
-  cidr_block     = "0.0.0.0/0"  # Permitir para qualquer destino
-}
-
-# ACL para Sub-rede Privada
-resource "aws_network_acl" "private_acl" {
-  vpc_id = aws_vpc.vpc_main.id
-
-  tags = {
-    Name = "Private-ACL"
-  }
-}
-
-# Regras da ACL para Sub-rede Privada
-resource "aws_network_acl_rule" "private_inbound" {
-  network_acl_id = aws_network_acl.private_acl.id
   rule_number    = 100
-  egress         = false  # Ingress (entrada)
+  egress         = true  # Egress (saída)
   protocol       = "tcp"
   rule_action    = "allow"
-  cidr_block     = "0.0.0.0/0"  # Permitir de qualquer origem/ Trocar para IP da Sub-rede Pública
-  from_port      = 0
-  to_port        = 65535
-}
-
-resource "aws_network_acl_rule" "private_outbound" {
-  network_acl_id = aws_network_acl.private_acl.id
-  rule_number    = 200
-  egress         = true  # Egress (saída)
-  protocol       = "-1"  # Todos os protocolos
-  rule_action    = "allow"
   cidr_block     = "0.0.0.0/0"  # Permitir para qualquer destino
+  from_port      = 1024
+  to_port        = 65535
 }
