@@ -29,7 +29,7 @@ resource "aws_subnet" "public_subnet" {
 resource "aws_subnet" "private_subnet" {
   vpc_id            = aws_vpc.vpc_main.id
   cidr_block        = "10.0.0.32/27"  # Sub-rede privada
-  availability_zone = "us-east-1a"    # Zona de disponibilidade
+  availability_zone = "us-east-1b"    # Zona de disponibilidade diferente
 
   tags = {
     Name = "Private-Subnet"
@@ -47,7 +47,9 @@ resource "aws_internet_gateway" "igw" {
 
 # 5. Criar NAT Gateway para a Subnet Privada
 resource "aws_eip" "nat_eip" {
-  # Cria um Elastic IP para o NAT Gateway
+  tags = {
+    Name = "NAT-EIP"
+  }
 }
 
 resource "aws_nat_gateway" "nat_gw" {
@@ -136,10 +138,10 @@ resource "aws_instance" "frontend_instance" {
   subnet_id              = aws_subnet.public_subnet.id
   vpc_security_group_ids = [aws_security_group.web_sg.id]
 
-  # Volume SSD de 3 GiB
+  # Volume SSD de 8 GiB
   root_block_device {
     volume_type = "gp3"  # Tipo de volume SSD
-    volume_size = 3      # Tamanho do volume em GiB
+    volume_size = 8      # Tamanho do volume em GiB
   }
 
   # Script de inicialização para montar o EFS
@@ -177,21 +179,21 @@ resource "aws_instance" "backend_instance" {
 
 # 13. Criar bucket S3 para armazenamento de imagens
 resource "aws_s3_bucket" "image_bucket" {
-  bucket = "sustentare-s3-exemple"
+  bucket = "sustentare-s3-example"  # Nome do bucket S deve ser único globalmente
 
   tags = {
     Name = "Image-Storage"
   }
 }
 
-# 14. Bloquear acessos públicos para o bucket S3
+# 14. Permitir acessos públicos para o bucket S3
 resource "aws_s3_bucket_public_access_block" "image_bucket_public_access" {
   bucket = aws_s3_bucket.image_bucket.id
 
-  block_public_acls        = true  # Bloquear ACLs públicas
-  block_public_policy      = true  # Bloquear políticas públicas
-  restrict_public_buckets  = true  # Restringir buckets públicos
-  ignore_public_acls       = true  # Ignorar ACLs públicas
+  block_public_acls        = false  # Permitir ACLs públicas
+  block_public_policy      = false  # Permitir políticas públicas
+  restrict_public_buckets  = false  # Permitir buckets públicos
+  ignore_public_acls       = false  # Não ignorar ACLs públicas
 }
 
 # 15. Definir política de bucket S3 para permitir upload privado
@@ -218,7 +220,7 @@ resource "aws_s3_bucket_policy" "image_bucket_policy" {
 resource "aws_s3_object" "example_image" {
   bucket = aws_s3_bucket.image_bucket.bucket
   key    = "the.jpeg"  # Nome do objeto no S3
-  source = ""  # Caminho local para o arquivo
+  source = "C:\\Users\\steph\\OneDrive\\Área de Trabalho\\Faculdade\\computacao_nuvem\\the.jpeg"  # Caminho local para o arquivo
 
   acl = "private"  # Definir como privado
 
@@ -241,12 +243,20 @@ resource "aws_efs_mount_target" "public_mount_target" {
   file_system_id  = aws_efs_file_system.example.id
   subnet_id       = aws_subnet.public_subnet.id
   security_groups = [aws_security_group.web_sg.id]
+
+  lifecycle {
+    prevent_destroy = false  # Permitir destruição do recurso
+  }
 }
 
 resource "aws_efs_mount_target" "private_mount_target" {
   file_system_id  = aws_efs_file_system.example.id
   subnet_id       = aws_subnet.private_subnet.id
   security_groups = [aws_security_group.web_sg.id]
+
+  lifecycle {
+    prevent_destroy = false  # Permitir destruição do recurso
+  }
 }
 
 # 19. Regras para permitir NFS (porta 2049)
