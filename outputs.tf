@@ -3,24 +3,34 @@ output "vpc_id" {
   value       = aws_vpc.vpc_main.id
 }
 
-output "public_subnet_id" {
-  description = "ID da Sub-rede Pública"
-  value       = aws_subnet.public_subnet.id
+output "public_subnet_id_a" {
+  description = "ID da Sub-rede Pública A"
+  value       = aws_subnet.public_subnet_a.id
 }
 
-output "private_subnet_id" {
-  description = "ID da Sub-rede Privada"
-  value       = aws_subnet.private_subnet.id
+output "public_subnet_id_b" {
+  description = "ID da Sub-rede Pública B"
+  value       = aws_subnet.public_subnet_b.id
 }
 
-output "frontend_instance_id" {
-  description = "ID da Instância EC2 Pública"
-  value       = aws_instance.frontend_instance.id
+output "private_subnet_id_a" {
+  description = "ID da Sub-rede Privada A"
+  value       = aws_subnet.private_subnet_a.id
 }
 
-output "backend_instance_id" {
-  description = "ID da Instância EC2 Privada"
-  value       = aws_instance.backend_instance.id
+output "private_subnet_id_b" {
+  description = "ID da Sub-rede Privada B"
+  value       = aws_subnet.private_subnet_b.id
+}
+
+output "frontend_instance_ids" {
+  description = "IDs das Instâncias EC2 Públicas"
+  value       = aws_autoscaling_group.frontend_asg.instances
+}
+
+output "backend_instance_ids" {
+  description = "IDs das Instâncias EC2 Privadas"
+  value       = aws_autoscaling_group.backend_asg.instances
 }
 
 output "s3_bucket_name" {

@@ -29,50 +29,72 @@ resource "aws_key_pair" "private_instance_key" {
   public_key = tls_private_key.private_instance_key.public_key_openssh
 }
 
-# 13. Criar instância EC2 na Subnet Pública com Volume EBS
-resource "aws_instance" "frontend_instance" {
-  ami                    = "ami-0e86e20dae9224db8"  # ID da AMI
-  instance_type          = "t2.micro"              # Tipo da instância
-  subnet_id              = aws_subnet.public_subnet.id
-  vpc_security_group_ids = [aws_security_group.public_sg.id]
-  key_name               = aws_key_pair.public_instance_key.key_name
+# 13. Criar Auto Scaling Group para instâncias EC2 na Subnet Pública
+resource "aws_launch_configuration" "frontend_lc" {
+  name          = "frontend-lc"
+  image_id      = "ami-0e86e20dae9224db8"  # ID da AMI
+  instance_type = "t2.micro"
+  key_name      = aws_key_pair.public_instance_key.key_name
+  security_groups = [aws_security_group.public_sg.id]
 
-  # Volume SSD de 8 GiB
   root_block_device {
-    volume_type = "gp3"  # Tipo de volume SSD
-    volume_size = 8      # Tamanho do volume em GiB
+    volume_type = "gp3"
+    volume_size = 8
   }
 
-  # Script de inicialização para montar o EFS
   user_data = <<-EOF
               #!/bin/bash
               sudo apt install -y amazon-efs-utils
               mkdir /mnt/efs
-              mount -t efs ${aws_efs_file_system.example.id}:/ /mnt/efs
+              mount -t efs ${aws_efs_file_system.efs.id}:/ /mnt/efs
               EOF
+}
 
-  tags = {
-    Name = "Frontend-EC2-Instance"
+resource "aws_autoscaling_group" "frontend_asg" {
+  launch_configuration = aws_launch_configuration.frontend_lc.id
+  min_size             = 2
+  max_size             = 4
+  desired_capacity     = 2
+  vpc_zone_identifier  = [aws_subnet.public_subnet_a.id, aws_subnet.public_subnet_b.id]
+
+  tag {
+    key                 = "Name"
+    value               = "Frontend-EC2-Instance"
+    propagate_at_launch = true
   }
 }
 
-# 14. Criar instância EC2 na Subnet Privada
-resource "aws_instance" "backend_instance" {
-  ami                    = "ami-0e86e20dae9224db8"  # ID da AMI
-  instance_type          = "t2.micro"              # Tipo da instância
-  subnet_id              = aws_subnet.private_subnet.id
-  vpc_security_group_ids = [aws_security_group.private_sg.id]
-  key_name               = aws_key_pair.private_instance_key.key_name
+# 14. Criar Auto Scaling Group para instâncias EC2 na Subnet Privada
+resource "aws_launch_configuration" "backend_lc" {
+  name          = "backend-lc"
+  image_id      = "ami-0e86e20dae9224db8"  # ID da AMI
+  instance_type = "t2.micro"
+  key_name      = aws_key_pair.private_instance_key.key_name
+  security_groups = [aws_security_group.private_sg.id]
 
-  # Script de inicialização para montar o EFS
+  root_block_device {
+    volume_type = "gp3"
+    volume_size = 8
+  }
+
   user_data = <<-EOF
               #!/bin/bash
               sudo apt install -y amazon-efs-utils
               mkdir /mnt/efs
-              mount -t efs ${aws_efs_file_system.example.id}:/ /mnt/efs
+              mount -t efs ${aws_efs_file_system.efs.id}:/ /mnt/efs
               EOF
+}
 
-  tags = {
-    Name = "Backend-EC2-Instance"
+resource "aws_autoscaling_group" "backend_asg" {
+  launch_configuration = aws_launch_configuration.backend_lc.id
+  min_size             = 2
+  max_size             = 4
+  desired_capacity     = 2
+  vpc_zone_identifier  = [aws_subnet.private_subnet_a.id, aws_subnet.private_subnet_b.id]
+
+  tag {
+    key                 = "Name"
+    value               = "Backend-EC2-Instance"
+    propagate_at_launch = true
   }
 }
