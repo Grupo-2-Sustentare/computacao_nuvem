@@ -1,18 +1,18 @@
 # 1. Criar a VPC
 resource "aws_vpc" "vpc_main" {
-  cidr_block           = "10.0.0.0/25"  # Endereço CIDR da VPC
+  cidr_block           = var.vpc_cidr  # Endereço CIDR da VPC
   enable_dns_support   = true           # Habilitar suporte a DNS
   enable_dns_hostnames = true           # Habilitar nomes DNS
 
   tags = {
-    Name = "Main-VPC"
+    Name = var.vpc_name
   }
 }
 
 # 2. Criar Subnet Pública
 resource "aws_subnet" "public_subnet" {
   vpc_id                  = aws_vpc.vpc_main.id
-  cidr_block              = "10.0.0.0/27"  # Sub-rede pública
+  cidr_block              = var.public_subnet_cidr  # Sub-rede pública
   map_public_ip_on_launch = true           # Atribuir IPs públicos automaticamente
   availability_zone       = "us-east-1a"   # Zona de disponibilidade
 
@@ -24,7 +24,7 @@ resource "aws_subnet" "public_subnet" {
 # 3. Criar Subnet Privada
 resource "aws_subnet" "private_subnet" {
   vpc_id            = aws_vpc.vpc_main.id
-  cidr_block        = "10.0.0.32/27"  # Sub-rede privada
+  cidr_block        = var.private_subnet_cidr  # Sub-rede privada
   availability_zone = "us-east-1b"    # Zona de disponibilidade diferente
 
   tags = {
@@ -134,77 +134,4 @@ resource "aws_security_group" "private_sg" {
   tags = {
     Name = "Private-Security-Group"
   }
-}
-
-# 11. Definir o Load Balancer
-resource "aws_lb" "app_lb" {
-  name               = "app-lb"
-  internal           = false
-  load_balancer_type = "application"
-  security_groups    = [aws_security_group.public_sg.id]
-  subnets            = [aws_subnet.public_subnet.id]
-
-  tags = {
-    Name = "App-Load-Balancer"
-  }
-}
-
-# 12. Configurar o Listener para HTTP
-resource "aws_lb_listener" "http_listener" {
-  load_balancer_arn = aws_lb.app_lb.arn
-  port              = "80"
-  protocol          = "HTTP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.app_tg.arn
-  }
-}
-
-# 13. Configurar o Listener para HTTPS
-resource "aws_lb_listener" "https_listener" {
-  load_balancer_arn = aws_lb.app_lb.arn
-  port              = "443"
-  protocol          = "HTTPS"
-  ssl_policy        = "ELBSecurityPolicy-2016-08"
-  certificate_arn   = var.certificate_arn
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.app_tg.arn
-  }
-}
-
-# 14. Configurar o Target Group
-resource "aws_lb_target_group" "app_tg" {
-  name     = "app-tg"
-  port     = 80
-  protocol = "HTTP"
-  vpc_id   = aws_vpc.vpc_main.id
-
-  health_check {
-    path                = "/"
-    interval            = 30
-    timeout             = 5
-    healthy_threshold   = 5
-    unhealthy_threshold = 2
-    matcher             = "200"
-  }
-
-  tags = {
-    Name = "App-Target-Group"
-  }
-}
-
-# 15. Registrar as Instâncias no Target Group
-resource "aws_lb_target_group_attachment" "frontend_instance" {
-  target_group_arn = aws_lb_target_group.app_tg.arn
-  target_id        = aws_instance.frontend_instance.id
-  port             = 80
-}
-
-resource "aws_lb_target_group_attachment" "backend_instance" {
-  target_group_arn = aws_lb_target_group.app_tg.arn
-  target_id        = aws_instance.backend_instance.id
-  port             = 80
 }

@@ -3,49 +3,23 @@ provider "aws" {
   region = var.region
 }
 
-# Variáveis
-variable "region" {
-  description = "The AWS region to deploy resources in"
-  default     = "us-east-1"
+# Inclui os recursos principais
+module "network" {
+  source = "./network"
 }
 
-variable "certificate_arn" {
-  description = "ARN do certificado SSL para o Load Balancer"
-  type        = string
+module "instances" {
+  source = "./instances"
 }
 
-# Outputs
-output "vpc_id" {
-  description = "ID da VPC"
-  value       = aws_vpc.vpc_main.id
+module "efs" {
+  source = "./efs"
 }
 
-output "public_subnet_id" {
-  description = "ID da Sub-rede Pública"
-  value       = aws_subnet.public_subnet.id
+module "s3" {
+  source = "./s3"
 }
 
-output "private_subnet_id" {
-  description = "ID da Sub-rede Privada"
-  value       = aws_subnet.private_subnet.id
-}
-
-output "frontend_instance_id" {
-  description = "ID da Instância EC2 Pública"
-  value       = aws_instance.frontend_instance.id
-}
-
-output "backend_instance_id" {
-  description = "ID da Instância EC2 Privada"
-  value       = aws_instance.backend_instance.id
-}
-
-output "s3_bucket_name" {
-  description = "Nome do Bucket S3"
-  value       = aws_s3_bucket.image_bucket.bucket
-}
-
-output "load_balancer_dns" {
-  description = "DNS do Load Balancer"
-  value       = aws_lb.app_lb.dns_name
+module "load_balancer" {
+  source = "./load_balancer"
 }
