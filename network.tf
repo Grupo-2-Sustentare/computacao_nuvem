@@ -1,8 +1,8 @@
 # 1. Criar a VPC
 resource "aws_vpc" "vpc_main" {
-  cidr_block           = var.vpc_cidr  # Endereço CIDR da VPC
-  enable_dns_support   = true           # Habilitar suporte a DNS
-  enable_dns_hostnames = true           # Habilitar nomes DNS
+  cidr_block           = var.vpc_cidr
+  enable_dns_support   = true
+  enable_dns_hostnames = true
 
   tags = {
     Name = var.vpc_name
@@ -12,9 +12,9 @@ resource "aws_vpc" "vpc_main" {
 # 2. Criar Subnets Públicas em múltiplas AZs
 resource "aws_subnet" "public_subnet_a" {
   vpc_id                  = aws_vpc.vpc_main.id
-  cidr_block              = "10.0.1.0/24"  # Sub-rede pública na AZ A
-  map_public_ip_on_launch = true           # Atribuir IPs públicos automaticamente
-  availability_zone       = "us-east-1a"   # Zona de disponibilidade A
+  cidr_block              = "10.0.1.0/24"
+  map_public_ip_on_launch = true
+  availability_zone       = "us-east-1a"
 
   tags = {
     Name = "Public-Subnet-A"
@@ -23,9 +23,9 @@ resource "aws_subnet" "public_subnet_a" {
 
 resource "aws_subnet" "public_subnet_b" {
   vpc_id                  = aws_vpc.vpc_main.id
-  cidr_block              = "10.0.2.0/24"  # Sub-rede pública na AZ B
-  map_public_ip_on_launch = true           # Atribuir IPs públicos automaticamente
-  availability_zone       = "us-east-1b"   # Zona de disponibilidade B
+  cidr_block              = "10.0.2.0/24"
+  map_public_ip_on_launch = true
+  availability_zone       = "us-east-1b"
 
   tags = {
     Name = "Public-Subnet-B"
@@ -35,8 +35,8 @@ resource "aws_subnet" "public_subnet_b" {
 # 3. Criar Subnets Privadas em múltiplas AZs
 resource "aws_subnet" "private_subnet_a" {
   vpc_id            = aws_vpc.vpc_main.id
-  cidr_block        = "10.0.3.0/24"  # Sub-rede privada na AZ A
-  availability_zone = "us-east-1a"   # Zona de disponibilidade A
+  cidr_block        = "10.0.3.0/24"
+  availability_zone = "us-east-1a"
 
   tags = {
     Name = "Private-Subnet-A"
@@ -45,8 +45,8 @@ resource "aws_subnet" "private_subnet_a" {
 
 resource "aws_subnet" "private_subnet_b" {
   vpc_id            = aws_vpc.vpc_main.id
-  cidr_block        = "10.0.4.0/24"  # Sub-rede privada na AZ B
-  availability_zone = "us-east-1b"   # Zona de disponibilidade B
+  cidr_block        = "10.0.4.0/24"
+  availability_zone = "us-east-1b"
 
   tags = {
     Name = "Private-Subnet-B"
@@ -67,8 +67,8 @@ resource "aws_route_table" "public_route_table" {
   vpc_id = aws_vpc.vpc_main.id
 
   route {
-    cidr_block = "0.0.0.0/0"                # Rota para todo o tráfego
-    gateway_id = aws_internet_gateway.igw.id  # Usar o Internet Gateway
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw.id
   }
 
   tags = {
@@ -129,7 +129,7 @@ resource "aws_security_group" "public_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # Permitir SSH de qualquer lugar
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -152,7 +152,7 @@ resource "aws_security_group" "private_sg" {
     from_port   = 0
     to_port     = 65535
     protocol    = "tcp"
-    cidr_blocks = ["10.0.0.0/16"]  # Permitir tráfego interno na VPC
+    cidr_blocks = ["10.0.0.0/16"]
   }
 
   egress {
@@ -230,12 +230,12 @@ resource "aws_lb_target_group" "app_tg" {
 # 15. Registrar as Instâncias no Target Group
 resource "aws_lb_target_group_attachment" "frontend_instance" {
   target_group_arn = aws_lb_target_group.app_tg.arn
-  target_id        = aws_instance.frontend_instance.id
+  target_id        = aws_autoscaling_group.frontend_asg.id
   port             = 80
 }
 
 resource "aws_lb_target_group_attachment" "backend_instance" {
   target_group_arn = aws_lb_target_group.app_tg.arn
-  target_id        = aws_instance.backend_instance.id
+  target_id        = aws_autoscaling_group.backend_asg.id
   port             = 80
 }

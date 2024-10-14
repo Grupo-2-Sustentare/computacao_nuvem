@@ -1,4 +1,6 @@
-# Definir o Provedor AWS
+
+# Definir um Provedor AWS com alias para outra configuração, se necessário
 provider "aws" {
-  region = var.region
+  alias  = "secondary"
+  region = var.secondary_region  # Defina esta variável no arquivo variables.tf
 }

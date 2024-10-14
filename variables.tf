@@ -5,10 +5,10 @@ variable "region" {
   default     = "us-east-1"
 }
 
-# Variável para o ARN do certificado SSL
 variable "certificate_arn" {
   description = "ARN do certificado SSL para o Load Balancer"
   type        = string
+  default     = "arn:aws:acm:region:account-id:certificate/certificate-id"
 }
 
 # Variável para o tipo de instância EC2 pública
@@ -36,6 +36,7 @@ variable "public_key_path" {
 variable "s3_bucket_name" {
   description = "Nome do bucket S3"
   type        = string
+  default = "SustentareBucketTest"
 }
 
 # Variável para o nome VPC
@@ -64,4 +65,10 @@ variable "private_subnet_cidr" {
   description = "CIDR da Subnet Privada"
   type        = string
   default     = "10.0.0.32/27"
+}
+# Variável para a região secundária da AWS
+variable "secondary_region" {
+  description = "The secondary AWS region to deploy resources in"
+  type        = string
+  default     = "us-west-1"  # Exemplo de região secundária
 }
