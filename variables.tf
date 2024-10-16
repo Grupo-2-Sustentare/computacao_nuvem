@@ -5,11 +5,6 @@ variable "region" {
   default     = "us-east-1"
 }
 
-variable "certificate_arn" {
-  description = "ARN do certificado SSL para o Load Balancer"
-  type        = string
-  default     = "arn:aws:acm:region:account-id:certificate/certificate-id"
-}
 
 # Variável para o tipo de instância EC2 pública
 variable "public_instance_type" {
