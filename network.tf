@@ -192,21 +192,7 @@ resource "aws_lb_listener" "http_listener" {
   }
 }
 
-# 13. Configurar o Listener para HTTPS
-resource "aws_lb_listener" "https_listener" {
-  load_balancer_arn = aws_lb.app_lb.arn
-  port              = "443"
-  protocol          = "HTTPS"
-  ssl_policy        = "ELBSecurityPolicy-2016-08"
-  certificate_arn   = var.certificate_arn
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.app_tg.arn
-  }
-}
-
-# 14. Configurar o Target Group
+# 13. Configurar o Target Group
 resource "aws_lb_target_group" "app_tg" {
   name     = "app-tg"
   port     = 80
@@ -227,7 +213,7 @@ resource "aws_lb_target_group" "app_tg" {
   }
 }
 
-# 15. Registrar as Instâncias no Target Group
+# 14. Registrar as Instâncias no Target Group
 resource "aws_lb_target_group_attachment" "frontend_instance" {
   target_group_arn = aws_lb_target_group.app_tg.arn
   target_id        = aws_autoscaling_group.frontend_asg.id
