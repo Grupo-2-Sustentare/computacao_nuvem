@@ -1,6 +1,6 @@
 # 1. Criar a VPC
 resource "aws_vpc" "vpc_main" {
-  cidr_block           = var.vpc_cidr
+  cidr_block           = "10.0.0.0/16" # Certifique-se de definir o CIDR da VPC aqui
   enable_dns_support   = true
   enable_dns_hostnames = true
 
@@ -12,7 +12,7 @@ resource "aws_vpc" "vpc_main" {
 # 2. Criar Subnets Públicas em múltiplas AZs
 resource "aws_subnet" "public_subnet_a" {
   vpc_id                  = aws_vpc.vpc_main.id
-  cidr_block              = "10.0.1.0/24"
+  cidr_block              = "10.0.1.0/24" # Certifique-se de que isso esteja dentro do CIDR da VPC
   map_public_ip_on_launch = true
   availability_zone       = "us-east-1a"
 
@@ -23,7 +23,7 @@ resource "aws_subnet" "public_subnet_a" {
 
 resource "aws_subnet" "public_subnet_b" {
   vpc_id                  = aws_vpc.vpc_main.id
-  cidr_block              = "10.0.2.0/24"
+  cidr_block              = "10.0.2.0/24" # Certifique-se de que isso esteja dentro do CIDR da VPC
   map_public_ip_on_launch = true
   availability_zone       = "us-east-1b"
 
@@ -35,7 +35,7 @@ resource "aws_subnet" "public_subnet_b" {
 # 3. Criar Subnets Privadas em múltiplas AZs
 resource "aws_subnet" "private_subnet_a" {
   vpc_id            = aws_vpc.vpc_main.id
-  cidr_block        = "10.0.3.0/24"
+  cidr_block        = "10.0.3.0/24" # Certifique-se de que isso esteja dentro do CIDR da VPC
   availability_zone = "us-east-1a"
 
   tags = {
@@ -45,7 +45,7 @@ resource "aws_subnet" "private_subnet_a" {
 
 resource "aws_subnet" "private_subnet_b" {
   vpc_id            = aws_vpc.vpc_main.id
-  cidr_block        = "10.0.4.0/24"
+  cidr_block        = "10.0.4.0/24" # Certifique-se de que isso esteja dentro do CIDR da VPC
   availability_zone = "us-east-1b"
 
   tags = {
@@ -224,11 +224,5 @@ resource "aws_lb_target_group" "app_tg" {
 resource "aws_lb_target_group_attachment" "frontend_instance" {
   target_group_arn = aws_lb_target_group.app_tg.arn
   target_id        = aws_autoscaling_group.frontend_asg.id
-  port             = 80
-}
-
-resource "aws_lb_target_group_attachment" "backend_instance" {
-  target_group_arn = aws_lb_target_group.app_tg.arn
-  target_id        = aws_autoscaling_group.backend_asg.id
   port             = 80
 }
