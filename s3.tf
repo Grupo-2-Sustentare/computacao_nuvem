@@ -7,17 +7,17 @@ resource "aws_s3_bucket" "image_bucket" {
   }
 }
 
-# 14. Bloquear acessos públicos para o bucket S3
+# 14. Desativar o Bloqueio de Políticas Públicas para o bucket S3
 resource "aws_s3_bucket_public_access_block" "image_bucket_public_access" {
   bucket = aws_s3_bucket.image_bucket.id
 
-  block_public_acls       = true
-  block_public_policy     = true
-  restrict_public_buckets = true
-  ignore_public_acls      = true
+  block_public_acls       = false
+  block_public_policy     = false
+  restrict_public_buckets = false
+  ignore_public_acls      = false
 }
 
-# 15. Definir Política de Bucket S3 para Permitir Upload Privado
+# 15. Definir Política de Bucket S3 para Permitir Upload, Acesso e Deleção Públicos
 resource "aws_s3_bucket_policy" "image_bucket_policy" {
   bucket = aws_s3_bucket.image_bucket.id
 
@@ -26,12 +26,11 @@ resource "aws_s3_bucket_policy" "image_bucket_policy" {
     Statement = [
       {
         Effect    = "Allow",
-        Principal = {
-          "AWS": "arn:aws:iam::146252035535:root"  # Ajuste conforme necessário para definir o acesso correto
-        },
+        Principal = "*",  # Permitir acesso para qualquer um
         Action    = [
           "s3:GetObject",
-          "s3:PutObject"
+          "s3:PutObject",
+          "s3:DeleteObject"
         ],
         Resource  = "${aws_s3_bucket.image_bucket.arn}/*"
       }
@@ -44,8 +43,6 @@ resource "aws_s3_object" "example_image" {
   bucket = aws_s3_bucket.image_bucket.bucket
   key    = var.image_key  # Nome do objeto no S3
   source = var.image_source_path  # Caminho local para o arquivo
-
-  acl = "private"  # Definir como privado
 
   tags = {
     Name = "Example-Image"
