@@ -37,3 +37,9 @@ output "s3_bucket_name" {
   description = "Nome do Bucket S3"
   value       = aws_s3_bucket.image_bucket.bucket
 }
+
+# Saída da URL do Bucket
+output "s3_bucket_url" {
+  description = "A URL do bucket S3 criado"
+  value       = aws_s3_bucket.image_bucket.bucket_domain_name
+}

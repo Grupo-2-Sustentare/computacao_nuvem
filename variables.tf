@@ -33,11 +33,25 @@ variable "public_key_path" {
   default     = "~/.ssh/id_rsa.pub"
 }
 
-# Variável para o nome do bucket S3
+# Variável para o Nome do Bucket S3
 variable "s3_bucket_name" {
   description = "Nome do bucket S3"
   type        = string
   default     = "sustentare-bucket-test"
+}
+
+# Variável para o Nome da Política do Bucket S3
+variable "s3_bucket_policy_name" {
+  description = "Nome da política de bucket S3"
+  type        = string
+  default     = "sustentare-image-bucket-policy"
+}
+
+# Variável para o Nome do Bloqueio de Acesso Público
+variable "s3_public_access_block_name" {
+  description = "Nome da configuração de bloqueio de acesso público do S3"
+  type        = string
+  default     = "sustentare-public-access-block"
 }
 
 # Variável para o nome da VPC
@@ -99,4 +113,18 @@ variable "private_sg_name" {
   description = "Nome para o Security Group Privado"
   type        = string
   default     = "Private-Security-Group"
+}
+
+# Variável para o caminho do arquivo de imagem
+variable "image_source_path" {
+  description = "Caminho local para o arquivo de imagem"
+  type        = string
+  default     = "the.jpeg"
+}
+
+# Variável para a chave do objeto no S3
+variable "image_key" {
+  description = "Nome do objeto no S3"
+  type        = string
+  default     = "the.jpeg"
 }

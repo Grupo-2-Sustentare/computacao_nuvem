@@ -32,8 +32,8 @@ resource "aws_key_pair" "private_instance_key" {
 # 13. Criar Auto Scaling Group para instâncias EC2 na Subnet Pública
 resource "aws_launch_configuration" "frontend_lc" {
   name            = "frontend-lc"
-  image_id        = "ami-0e86e20dae9224db8"  # ID da AMI
-  instance_type   = "t2.micro"
+  image_id        = var.ami_id  # ID da AMI
+  instance_type   = var.public_instance_type
   key_name        = aws_key_pair.public_instance_key.key_name
   security_groups = [aws_security_group.public_sg.id]
 
@@ -60,7 +60,7 @@ resource "aws_autoscaling_group" "frontend_asg" {
 # 14. Criar Auto Scaling Group para instâncias EC2 na Subnet Privada
 resource "aws_launch_configuration" "backend_lc" {
   name            = "backend-lc"
-  image_id        = "ami-0e86e20dae9224db8"  # ID da AMI
+  image_id        = var.ami_id  # ID da AMI
   instance_type   = "t2.micro"
   key_name        = aws_key_pair.private_instance_key.key_name
   security_groups = [aws_security_group.private_sg.id]
@@ -83,4 +83,10 @@ resource "aws_autoscaling_group" "backend_asg" {
     value               = "Backend-EC2-Instance"
     propagate_at_launch = true
   }
+}
+
+# 15. Associar o Auto Scaling Group ao Target Group
+resource "aws_autoscaling_attachment" "frontend_asg_attachment" {
+  autoscaling_group_name = aws_autoscaling_group.frontend_asg.name
+  lb_target_group_arn    = aws_lb_target_group.app_tg.arn
 }
