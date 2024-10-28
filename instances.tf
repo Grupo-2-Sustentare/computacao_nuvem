@@ -84,9 +84,3 @@ resource "aws_autoscaling_group" "backend_asg" {
     propagate_at_launch = true
   }
 }
-
-# 15. Associar o Auto Scaling Group ao Target Group
-resource "aws_autoscaling_attachment" "frontend_asg_attachment" {
-  autoscaling_group_name = aws_autoscaling_group.frontend_asg.name
-  lb_target_group_arn    = aws_lb_target_group.app_tg.arn
-}

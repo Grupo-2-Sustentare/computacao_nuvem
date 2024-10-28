@@ -82,7 +82,7 @@ resource "aws_route_table_association" "public_subnet_association_a" {
   route_table_id = aws_route_table.public_route_table.id
 }
 
-resource "aws_route_table_association" "public_subnet_association_b" {
+resource "aws_route_table_association" "puejsociation_b" {
   subnet_id      = aws_subnet.public_subnet_b.id
   route_table_id = aws_route_table.public_route_table.id
 }
@@ -186,7 +186,6 @@ resource "aws_lb" "app_lb" {
     Name = "App-Load-Balancer"
   }
 }
-
 # 12. Configurar o Listener para HTTP
 resource "aws_lb_listener" "http_listener" {
   load_balancer_arn = aws_lb.app_lb.arn
@@ -195,13 +194,13 @@ resource "aws_lb_listener" "http_listener" {
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.app_tg.arn
+    target_group_arn = aws_lb_target_group.app_tg_a.arn
   }
 }
 
-# 13. Configurar o Target Group
-resource "aws_lb_target_group" "app_tg" {
-  name     = "app-tg"
+# 13. Configurar o Target Group para a Zona de Disponibilidade A
+resource "aws_lb_target_group" "app_tg_a" {
+  name     = "app-tg-a"
   port     = 80
   protocol = "HTTP"
   vpc_id   = aws_vpc.vpc_main.id
@@ -216,6 +215,39 @@ resource "aws_lb_target_group" "app_tg" {
   }
 
   tags = {
-    Name = "App-Target-Group"
+    Name = "App-Target-Group-A"
   }
+}
+
+# 14. Configurar o Target Group para a Zona de Disponibilidade B
+resource "aws_lb_target_group" "app_tg_b" {
+  name     = "app-tg-b"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.vpc_main.id
+
+  health_check {
+    path                = "/"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 5
+    unhealthy_threshold = 2
+    matcher             = "200"
+  }
+
+  tags = {
+    Name = "App-Target-Group-B"
+  }
+}
+
+# 15. Associar o Auto Scaling Group ao Target Group A
+resource "aws_autoscaling_attachment" "frontend_asg_attachment_a" {
+  autoscaling_group_name = aws_autoscaling_group.frontend_asg.name
+  lb_target_group_arn    = aws_lb_target_group.app_tg_a.arn
+}
+
+# 16. Associar o Auto Scaling Group ao Target Group B
+resource "aws_autoscaling_attachment" "frontend_asg_attachment_b" {
+  autoscaling_group_name = aws_autoscaling_group.frontend_asg.name
+  lb_target_group_arn    = aws_lb_target_group.app_tg_b.arn
 }
