@@ -1,0 +1,253 @@
+# 1. Criar a VPC
+resource "aws_vpc" "vpc_main" {
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+
+  tags = {
+    Name = var.vpc_name
+  }
+}
+
+# 2. Criar Subnets Públicas em múltiplas AZs
+resource "aws_subnet" "public_subnet_a" {
+  vpc_id                  = aws_vpc.vpc_main.id
+  cidr_block              = "10.0.1.0/24"
+  map_public_ip_on_launch = true
+  availability_zone       = "us-east-1a"
+
+  tags = {
+    Name = "Public-Subnet-A"
+  }
+}
+
+resource "aws_subnet" "public_subnet_b" {
+  vpc_id                  = aws_vpc.vpc_main.id
+  cidr_block              = "10.0.2.0/24"
+  map_public_ip_on_launch = true
+  availability_zone       = "us-east-1b"
+
+  tags = {
+    Name = "Public-Subnet-B"
+  }
+}
+
+# 3. Criar Subnets Privadas em múltiplas AZs
+resource "aws_subnet" "private_subnet_a" {
+  vpc_id            = aws_vpc.vpc_main.id
+  cidr_block        = "10.0.3.0/24"
+  availability_zone = "us-east-1a"
+
+  tags = {
+    Name = "Private-Subnet-A"
+  }
+}
+
+resource "aws_subnet" "private_subnet_b" {
+  vpc_id            = aws_vpc.vpc_main.id
+  cidr_block        = "10.0.4.0/24"
+  availability_zone = "us-east-1b"
+
+  tags = {
+    Name = "Private-Subnet-B"
+  }
+}
+
+# 4. Criar Internet Gateway
+resource "aws_internet_gateway" "igw" {
+  vpc_id = aws_vpc.vpc_main.id
+
+  tags = {
+    Name = "Main-Internet-Gateway"
+  }
+}
+
+# 5. Criar a Route Table para as Subnets Públicas
+resource "aws_route_table" "public_route_table" {
+  vpc_id = aws_vpc.vpc_main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw.id
+  }
+
+  tags = {
+    Name = "Public-Route-Table"
+  }
+}
+
+# 6. Associar a Route Table com as Subnets Públicas
+resource "aws_route_table_association" "public_subnet_association_a" {
+  subnet_id      = aws_subnet.public_subnet_a.id
+  route_table_id = aws_route_table.public_route_table.id
+}
+
+resource "aws_route_table_association" "puejsociation_b" {
+  subnet_id      = aws_subnet.public_subnet_b.id
+  route_table_id = aws_route_table.public_route_table.id
+}
+
+# 7. Criar uma Route Table para as Subnets Privadas
+resource "aws_route_table" "private_route_table" {
+  vpc_id = aws_vpc.vpc_main.id
+
+  tags = {
+    Name = "Private-Route-Table"
+  }
+}
+
+# 8. Associar a Route Table com as Subnets Privadas
+resource "aws_route_table_association" "private_subnet_association_a" {
+  subnet_id      = aws_subnet.private_subnet_a.id
+  route_table_id = aws_route_table.private_route_table.id
+}
+
+resource "aws_route_table_association" "private_subnet_association_b" {
+  subnet_id      = aws_subnet.private_subnet_b.id
+  route_table_id = aws_route_table.private_route_table.id
+}
+
+# 9. Criar Security Group Público
+resource "aws_security_group" "public_sg" {
+  vpc_id = aws_vpc.vpc_main.id
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "Public-Security-Group"
+  }
+}
+
+# 10. Criar Security Group Privado
+resource "aws_security_group" "private_sg" {
+  vpc_id = aws_vpc.vpc_main.id
+
+  ingress {
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]
+  }
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "Private-Security-Group"
+  }
+}
+
+# 11. Definir o Load Balancer
+resource "aws_lb" "app_lb" {
+  name               = "app-lb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.public_sg.id]
+  subnets            = [aws_subnet.public_subnet_a.id, aws_subnet.public_subnet_b.id]
+
+  tags = {
+    Name = "App-Load-Balancer"
+  }
+}
+# 12. Configurar o Listener para HTTP
+resource "aws_lb_listener" "http_listener" {
+  load_balancer_arn = aws_lb.app_lb.arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.app_tg_a.arn
+  }
+}
+
+# 13. Configurar o Target Group para a Zona de Disponibilidade A
+resource "aws_lb_target_group" "app_tg_a" {
+  name     = "app-tg-a"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.vpc_main.id
+
+  health_check {
+    path                = "/"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 5
+    unhealthy_threshold = 2
+    matcher             = "200"
+  }
+
+  tags = {
+    Name = "App-Target-Group-A"
+  }
+}
+
+# 14. Configurar o Target Group para a Zona de Disponibilidade B
+resource "aws_lb_target_group" "app_tg_b" {
+  name     = "app-tg-b"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.vpc_main.id
+
+  health_check {
+    path                = "/"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 5
+    unhealthy_threshold = 2
+    matcher             = "200"
+  }
+
+  tags = {
+    Name = "App-Target-Group-B"
+  }
+}
+
+# 15. Associar o Auto Scaling Group ao Target Group A
+resource "aws_autoscaling_attachment" "frontend_asg_attachment_a" {
+  autoscaling_group_name = aws_autoscaling_group.frontend_asg.name
+  lb_target_group_arn    = aws_lb_target_group.app_tg_a.arn
+}
+
+# 16. Associar o Auto Scaling Group ao Target Group B
+resource "aws_autoscaling_attachment" "frontend_asg_attachment_b" {
+  autoscaling_group_name = aws_autoscaling_group.frontend_asg.name
+  lb_target_group_arn    = aws_lb_target_group.app_tg_b.arn
+}
