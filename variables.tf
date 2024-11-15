@@ -128,3 +128,24 @@ variable "image_key" {
   type        = string
   default     = "the.jpeg"
 }
+
+# Variáveis para os CIDRs das Subnets Públicas
+variable "public_subnet_cidrs" {
+  description = "CIDR blocks for the public subnets"
+  type        = list(string)
+  default     = ["10.0.1.0/24", "10.0.2.0/24"]
+}
+
+# Variáveis para os CIDRs das Subnets Privadas
+variable "private_subnet_cidrs" {
+  description = "CIDR blocks for the private subnets"
+  type        = list(string)
+  default     = ["10.0.3.0/24", "10.0.4.0/24"]
+}
+
+# Variável para as Availability Zones
+variable "availability_zones" {
+  description = "Availability zones for the subnets"
+  type        = list(string)
+  default     = ["us-east-1a", "us-east-1b"]
+}
