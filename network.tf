@@ -132,6 +132,20 @@ resource "aws_security_group" "public_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    from_port   = 25565
+    to_port     = 25565
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 3006
+    to_port     = 3006
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -277,4 +291,79 @@ resource "aws_route" "private_route" {
   route_table_id         = aws_route_table.private_route_table.id
   destination_cidr_block = "0.0.0.0/0"
   nat_gateway_id         = aws_nat_gateway.nat_gateway.id
+}
+
+# Criar ACL (Access Control List) para as Subnets Públicas
+resource "aws_network_acl" "public_acl" {
+  vpc_id = aws_vpc.vpc_main.id
+
+  ingress {
+    rule_no    = 100
+    protocol   = "tcp"
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 80
+    to_port    = 80
+  }
+
+  ingress {
+    rule_no    = 110
+    protocol   = "tcp"
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 443
+    to_port    = 443
+  }
+
+  ingress {
+    rule_no    = 120
+    protocol   = "tcp"
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 22
+    to_port    = 22
+  }
+
+  ingress {
+    rule_no    = 130
+    protocol   = "tcp"
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 25565
+    to_port    = 25565
+  }
+
+  ingress {
+    rule_no    = 140
+    protocol   = "tcp"
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 3006
+    to_port    = 3006
+  }
+
+  egress {
+    rule_no    = 150
+    protocol   = "-1"     # All traffic
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 0
+    to_port    = 0
+  }
+
+  tags = {
+    Name = "Public-ACL"
+  }
+}
+
+# Associar ACL à Subnet Pública A
+resource "aws_network_acl_association" "public_acl_association_a" {
+  subnet_id      = aws_subnet.public_subnet_a.id
+  network_acl_id = aws_network_acl.public_acl.id
+}
+
+# Associar ACL à Subnet Pública B
+resource "aws_network_acl_association" "public_acl_association_b" {
+  subnet_id      = aws_subnet.public_subnet_b.id
+  network_acl_id = aws_network_acl.public_acl.id
 }

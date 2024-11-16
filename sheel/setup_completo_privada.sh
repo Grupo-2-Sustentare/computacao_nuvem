@@ -11,7 +11,7 @@ echo "Java instalado com sucesso:"
 java -version
 
 # Configurando variável JAVA_HOME
-JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java)))))
+JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))
 echo "JAVA_HOME=$JAVA_HOME" | sudo tee -a /etc/environment
 source /etc/environment
 echo "JAVA_HOME configurado como: $JAVA_HOME"
@@ -32,15 +32,11 @@ echo "Spring Boot CLI instalado. Versão:"
 spring --version
 
 # Instalação do MySQL
-echo "Instalando MySQL..."
-sudo apt install mysql-server -y
+echo "Instalando MySQL Server e Cliente..."
+sudo apt install mysql-server mysql-client -y
 echo "MySQL instalado com sucesso."
 sudo systemctl enable mysql
 sudo systemctl start mysql
-
-# Configuração inicial do MySQL
-echo "Configurando MySQL..."
-sudo mysql_secure_installation
 
 # Criando o usuário root com a senha 'sptech'
 echo "Criando o usuário root no MySQL com senha 'sptech'..."
@@ -50,7 +46,8 @@ sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_passwo
 echo "Garantindo privilégios para o usuário root..."
 sudo mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;"
 
-echo "Banco de dados 'exemplo_db' criado."
+# Criando banco de dados de exemplo
+echo "Criando o banco de dados 'exemplo_db'..."
 sudo mysql -e "CREATE DATABASE exemplo_db;"
 
 # Instalação do Git
@@ -68,7 +65,7 @@ git config --global --list
 
 # Clonando repositórios do Git
 echo "Clonando repositórios do Git..."
-git clone https://github.com/Grupo-2-Sustentare/sustentare-api.git
+#git clone https://github.com/Grupo-2-Sustentare/sustentare-api.git
 git clone https://github.com/Grupo-2-Sustentare/sustentare-data.git
 
 # Mensagem de sucesso
@@ -78,4 +75,3 @@ echo "2. Spring Boot disponível: $(spring --version)"
 echo "3. MySQL instalado e rodando."
 echo "4. Git configurado com sucesso: $(git config --global --list)"
 echo "5. Repositórios clonados com sucesso."
-yes
