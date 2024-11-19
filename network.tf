@@ -76,7 +76,7 @@ resource "aws_route_table" "public_route_table" {
   }
 }
 
-# 6. Associar a Route Table com as Subnets Públicas
+# Atualizar Route Table das Subnets Públicas
 resource "aws_route_table_association" "public_subnet_association_a" {
   subnet_id      = aws_subnet.public_subnet_a.id
   route_table_id = aws_route_table.public_route_table.id
@@ -342,6 +342,15 @@ resource "aws_network_acl" "public_acl" {
     to_port    = 3006
   }
 
+  ingress {
+    rule_no    = 90
+    protocol   = "-1" # Todos os protocolos
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 0
+    to_port    = 0
+  }
+
   egress {
     rule_no    = 150
     protocol   = "-1"     # All traffic
@@ -356,14 +365,42 @@ resource "aws_network_acl" "public_acl" {
   }
 }
 
-# Associar ACL à Subnet Pública A
+# Associar ACL às Subnets Públicas
 resource "aws_network_acl_association" "public_acl_association_a" {
   subnet_id      = aws_subnet.public_subnet_a.id
   network_acl_id = aws_network_acl.public_acl.id
 }
 
-# Associar ACL à Subnet Pública B
 resource "aws_network_acl_association" "public_acl_association_b" {
   subnet_id      = aws_subnet.public_subnet_b.id
   network_acl_id = aws_network_acl.public_acl.id
+}
+
+# Criar ACL (Access Control List) para as Subnets Privadas
+resource "aws_network_acl" "private_acl" {
+  vpc_id = aws_vpc.vpc_main.id
+
+  egress {
+    rule_no    = 100
+    protocol   = "-1"     # All traffic
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 0
+    to_port    = 0
+  }
+
+  tags = {
+    Name = "Private-ACL"
+  }
+}
+
+# Associar ACL às Subnets Privadas
+resource "aws_network_acl_association" "private_acl_association_a" {
+  subnet_id      = aws_subnet.private_subnet_a.id
+  network_acl_id = aws_network_acl.private_acl.id
+}
+
+resource "aws_network_acl_association" "private_acl_association_b" {
+  subnet_id      = aws_subnet.private_subnet_b.id
+  network_acl_id = aws_network_acl.private_acl.id
 }

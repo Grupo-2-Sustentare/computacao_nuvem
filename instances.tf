@@ -39,7 +39,7 @@ resource "aws_launch_configuration" "frontend_lc" {
 
   root_block_device {
     volume_type = "gp3"
-    volume_size = 8
+    volume_size = 20
   }
 }
 
@@ -67,7 +67,7 @@ resource "aws_launch_configuration" "backend_lc" {
 
   root_block_device {
     volume_type = "gp3"
-    volume_size = 8
+    volume_size = 20
   }
 }
 
