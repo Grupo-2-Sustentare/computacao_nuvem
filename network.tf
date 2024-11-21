@@ -1,6 +1,6 @@
 # 1. Criar a VPC
 resource "aws_vpc" "vpc_main" {
-  cidr_block           = "10.0.0.0/16"
+  cidr_block           = var.vpc_cidr
   enable_dns_support   = true
   enable_dns_hostnames = true
 
@@ -12,9 +12,9 @@ resource "aws_vpc" "vpc_main" {
 # 2. Criar Subnets Públicas em múltiplas AZs
 resource "aws_subnet" "public_subnet_a" {
   vpc_id                  = aws_vpc.vpc_main.id
-  cidr_block              = "10.0.1.0/24"
+  cidr_block              = var.public_subnet_a_cidr
   map_public_ip_on_launch = true
-  availability_zone       = "us-east-1a"
+  availability_zone       = var.availability_zones[0]
 
   tags = {
     Name = "Public-Subnet-A"
@@ -23,9 +23,9 @@ resource "aws_subnet" "public_subnet_a" {
 
 resource "aws_subnet" "public_subnet_b" {
   vpc_id                  = aws_vpc.vpc_main.id
-  cidr_block              = "10.0.2.0/24"
+  cidr_block              = var.public_subnet_b_cidr
   map_public_ip_on_launch = true
-  availability_zone       = "us-east-1b"
+  availability_zone       = var.availability_zones[1]
 
   tags = {
     Name = "Public-Subnet-B"
@@ -35,8 +35,8 @@ resource "aws_subnet" "public_subnet_b" {
 # 3. Criar Subnets Privadas em múltiplas AZs
 resource "aws_subnet" "private_subnet_a" {
   vpc_id            = aws_vpc.vpc_main.id
-  cidr_block        = "10.0.3.0/24"
-  availability_zone = "us-east-1a"
+  cidr_block        = var.private_subnet_a_cidr
+  availability_zone = var.availability_zones[0]
 
   tags = {
     Name = "Private-Subnet-A"
@@ -45,8 +45,8 @@ resource "aws_subnet" "private_subnet_a" {
 
 resource "aws_subnet" "private_subnet_b" {
   vpc_id            = aws_vpc.vpc_main.id
-  cidr_block        = "10.0.4.0/24"
-  availability_zone = "us-east-1b"
+  cidr_block        = var.private_subnet_b_cidr
+  availability_zone = var.availability_zones[1]
 
   tags = {
     Name = "Private-Subnet-B"
@@ -76,13 +76,13 @@ resource "aws_route_table" "public_route_table" {
   }
 }
 
-# 6. Associar a Route Table com as Subnets Públicas
+# Atualizar Route Table das Subnets Públicas
 resource "aws_route_table_association" "public_subnet_association_a" {
   subnet_id      = aws_subnet.public_subnet_a.id
   route_table_id = aws_route_table.public_route_table.id
 }
 
-resource "aws_route_table_association" "puejsociation_b" {
+resource "aws_route_table_association" "public_subnet_association_b" {
   subnet_id      = aws_subnet.public_subnet_b.id
   route_table_id = aws_route_table.public_route_table.id
 }
@@ -132,6 +132,20 @@ resource "aws_security_group" "public_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    from_port   = 25565
+    to_port     = 25565
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 3006
+    to_port     = 3006
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -139,8 +153,22 @@ resource "aws_security_group" "public_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+    ingress {
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   tags = {
-    Name = "Public-Security-Group"
+    Name = var.public_sg_name
   }
 }
 
@@ -153,6 +181,13 @@ resource "aws_security_group" "private_sg" {
     to_port     = 65535
     protocol    = "tcp"
     cidr_blocks = ["10.0.0.0/16"]
+  }
+
+    ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
@@ -170,7 +205,7 @@ resource "aws_security_group" "private_sg" {
   }
 
   tags = {
-    Name = "Private-Security-Group"
+    Name = var.private_sg_name
   }
 }
 
@@ -186,6 +221,7 @@ resource "aws_lb" "app_lb" {
     Name = "App-Load-Balancer"
   }
 }
+
 # 12. Configurar o Listener para HTTP
 resource "aws_lb_listener" "http_listener" {
   load_balancer_arn = aws_lb.app_lb.arn
@@ -250,4 +286,170 @@ resource "aws_autoscaling_attachment" "frontend_asg_attachment_a" {
 resource "aws_autoscaling_attachment" "frontend_asg_attachment_b" {
   autoscaling_group_name = aws_autoscaling_group.frontend_asg.name
   lb_target_group_arn    = aws_lb_target_group.app_tg_b.arn
+}
+
+# Criar Elastic IP para o NAT Gateway
+resource "aws_eip" "nat_eip" {
+  domain = "vpc"
+
+  tags = {
+    Name = "NAT-Gateway-EIP"
+  }
+}
+
+# Criar NAT Gateway
+resource "aws_nat_gateway" "nat_gateway" {
+  allocation_id = aws_eip.nat_eip.id
+  subnet_id     = aws_subnet.public_subnet_a.id
+
+  tags = {
+    Name = "NAT-Gateway"
+  }
+}
+
+# Atualizar Route Table das Subnets Privadas para usar o NAT Gateway
+resource "aws_route" "private_route" {
+  route_table_id         = aws_route_table.private_route_table.id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = aws_nat_gateway.nat_gateway.id
+}
+
+# Criar ACL (Access Control List) para as Subnets Públicas
+resource "aws_network_acl" "public_acl" {
+  vpc_id = aws_vpc.vpc_main.id
+
+  ingress {
+    rule_no    = 100
+    protocol   = "tcp"
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 80
+    to_port    = 80
+  }
+
+  ingress {
+    rule_no    = 110
+    protocol   = "tcp"
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 443
+    to_port    = 443
+  }
+
+  ingress {
+    rule_no    = 120
+    protocol   = "tcp"
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 22
+    to_port    = 22
+  }
+
+  ingress {
+    rule_no    = 130
+    protocol   = "tcp"
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 25565
+    to_port    = 25565
+  }
+
+  ingress {
+    rule_no    = 140
+    protocol   = "tcp"
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 3006
+    to_port    = 3006
+  }
+
+  ingress {
+    rule_no    = 90
+    protocol   = "-1" # Todos os protocolos
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 0
+    to_port    = 0
+  }
+
+  egress {
+    rule_no    = 150
+    protocol   = "-1"     # All traffic
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 0
+    to_port    = 0
+  }
+
+  tags = {
+    Name = "Public-ACL"
+  }
+}
+
+# Associar ACL às Subnets Públicas
+resource "aws_network_acl_association" "public_acl_association_a" {
+  subnet_id      = aws_subnet.public_subnet_a.id
+  network_acl_id = aws_network_acl.public_acl.id
+}
+
+resource "aws_network_acl_association" "public_acl_association_b" {
+  subnet_id      = aws_subnet.public_subnet_b.id
+  network_acl_id = aws_network_acl.public_acl.id
+}
+
+# Criar ACL (Access Control List) para as Subnets Privadas
+resource "aws_network_acl" "private_acl" {
+  vpc_id = aws_vpc.vpc_main.id
+
+  egress {
+    rule_no    = 100
+    protocol   = "-1"     # All traffic
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 0
+    to_port    = 0
+  }
+
+    ingress {
+    rule_no    = 90
+    protocol   = "-1" # Todos os protocolos
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 0
+    to_port    = 0
+  }
+
+  egress {
+    rule_no    = 150
+    protocol   = "-1"     # All traffic
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 0
+    to_port    = 0
+  }
+
+
+   ingress {
+    rule_no    = 120
+    protocol   = "tcp"
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 22
+    to_port    = 22
+  }
+
+  tags = {
+    Name = "Private-ACL"
+  }
+}
+
+# Associar ACL às Subnets Privadas
+resource "aws_network_acl_association" "private_acl_association_a" {
+  subnet_id      = aws_subnet.private_subnet_a.id
+  network_acl_id = aws_network_acl.private_acl.id
+}
+
+resource "aws_network_acl_association" "private_acl_association_b" {
+  subnet_id      = aws_subnet.private_subnet_b.id
+  network_acl_id = aws_network_acl.private_acl.id
 }
