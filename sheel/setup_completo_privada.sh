@@ -86,16 +86,16 @@ echo "Executando o arquivo banco_dados.sh..."
 chmod +x sustentare-data/banco_dados.sh
 ./sustentare-data/banco_dados.sh
 
-# # Executando o arquivo .jar
-# echo "Ativando o arquivo .jar..."
-# cd repo-teste-jar
-# JAR_FILE=$(find . -name "*.jar" | head -n 1)
+# Executando o arquivo .jar
+echo "Ativando o arquivo .jar..."
+cd repo-teste-jar
+JAR_FILE=$(find . -name "*.jar" | head -n 1)
 
-# if [ -f "$JAR_FILE" ]; then
-#     echo "Iniciando o arquivo $JAR_FILE..."
-#     java -jar "$JAR_FILE" &
-#     echo "Aplicação iniciada com sucesso."
-# else
-#     echo "Nenhum arquivo .jar encontrado no diretório repo-teste-jar."
-# fi
+if [ -f "$JAR_FILE" ]; then
+    echo "Iniciando o arquivo $JAR_FILE..."
+    java -jar "$JAR_FILE" &
+    echo "Aplicação iniciada com sucesso."
+else
+    echo "Nenhum arquivo .jar encontrado no diretório repo-teste-jar."
+fi
 
