@@ -49,7 +49,7 @@ for repo in "${repos[@]}"; do
         npm install
         
         echo "Dependências instaladas em $repo."
-        cd .. # Voltar para o diretório anterior
+        cd ../ # Voltar para o diretório anterior
     else
         echo "Repositório $repo não encontrado! Verifique se foi clonado corretamente."
     fi
