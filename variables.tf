@@ -16,14 +16,14 @@ variable "secondary_region" {
 variable "public_instance_type" {
   description = "Tipo de instância EC2 para a instância pública"
   type        = string
-  default     = "t2.micro"
+  default     = "t3.medium"
 }
 
 # Variável para o tipo de instância EC2 privada
 variable "private_instance_type" {
   description = "Tipo de instância EC2 para a instância privada"
   type        = string
-  default     = "t2.micro"
+  default     = "t2.medium"
 }
 
 # Variável para a chave SSH pública
@@ -37,7 +37,7 @@ variable "public_key_path" {
 variable "s3_bucket_name" {
   description = "Nome do bucket S3"
   type        = string
-  default     = "sustentare-bucket-test"
+  default     = "sustentare-bucket-teste"
 }
 
 # Variável para o Nome da Política do Bucket S3
@@ -98,7 +98,7 @@ variable "private_subnet_b_cidr" {
 variable "ami_id" {
   description = "AMI ID para instâncias"
   type        = string
-  default     = "ami-0e86e20dae9224db8" # Substitua pelo ID específico que deseja usar
+  default     = "ami-0866a3c8686eaeeba" # Substitua pelo ID específico que deseja usar 
 }
 
 # Variável para o nome do Security Group Público

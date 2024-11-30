@@ -204,6 +204,21 @@ resource "aws_security_group" "private_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+    ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+
   tags = {
     Name = var.private_sg_name
   }
@@ -372,6 +387,7 @@ resource "aws_network_acl" "public_acl" {
     to_port    = 0
   }
 
+
   egress {
     rule_no    = 150
     protocol   = "-1"     # All traffic
@@ -437,6 +453,24 @@ resource "aws_network_acl" "private_acl" {
     from_port  = 22
     to_port    = 22
   }
+
+egress {
+  rule_no    = 140
+  protocol   = "tcp"
+  action     = "allow"
+  cidr_block = "0.0.0.0/0"
+  from_port  = 8080
+  to_port    = 8080
+}
+
+ingress {
+  rule_no    = 140
+  protocol   = "tcp"
+  action     = "allow"
+  cidr_block = "0.0.0.0/0"
+  from_port  = 8080
+  to_port    = 8080
+}
 
   tags = {
     Name = "Private-ACL"

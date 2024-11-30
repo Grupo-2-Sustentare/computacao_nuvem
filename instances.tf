@@ -61,7 +61,7 @@ resource "aws_autoscaling_group" "frontend_asg" {
 resource "aws_launch_configuration" "backend_lc" {
   name            = "backend-lc"
   image_id        = var.ami_id  # ID da AMI
-  instance_type   = "t2.micro"
+  instance_type   = var.public_instance_type
   key_name        = aws_key_pair.private_instance_key.key_name
   security_groups = [aws_security_group.private_sg.id]
 

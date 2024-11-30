@@ -42,16 +42,23 @@ sudo systemctl start mysql
 echo "Configurando usuários no MySQL..."
 
 # Configurando o usuário 'root' com senha 'urubu100'
-sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'urubu100';"
+sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'urubu100';"
 sudo mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;"
+sudo mysql -e "FLUSH PRIVILEGES;"
 
-# Criando o usuário 'sustentare' com a mesma senha e privilégios
-sudo mysql -e "CREATE USER 'projetoSemente'@'localhost' IDENTIFIED WITH mysql_native_password BY 'urubu100';"
+# Criando o usuário 'projetoSemente' com a mesma senha e privilégios
+sudo mysql -e "CREATE USER 'projetoSemente'@'localhost' IDENTIFIED BY 'urubu100';"
 sudo mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'projetoSemente'@'localhost' WITH GRANT OPTION;"
+sudo mysql -e "FLUSH PRIVILEGES;"
 
 # Criando banco de dados de exemplo
 echo "Criando o banco de dados 'exemplo_db'..."
 sudo mysql -e "CREATE DATABASE exemplo_db;"
+
+# Teste de conexão MySQL
+echo "Testando conexões com MySQL..."
+mysql -u root -purubu100 -e "SHOW DATABASES;"
+mysql -u projetoSemente -purubu100 -e "SHOW DATABASES;"
 
 # Instalação do Git
 echo "Instalando Git..."
@@ -68,9 +75,8 @@ git config --global --list
 
 # Clonando repositórios do Git
 echo "Clonando repositórios do Git..."
-git clone https://github.com/Grupo-2-Sustentare/repo-teste-jar.git
+git clone https://github.com/Grupo-2-Sustentare/sustentare-api.git
 git clone https://github.com/Grupo-2-Sustentare/sustentare-data.git
-
 
 # Mensagem de sucesso
 echo "Instalação e configuração concluídas! Verifique os componentes:"
@@ -79,23 +85,32 @@ echo "2. Spring Boot disponível: $(spring --version)"
 echo "3. MySQL instalado e rodando."
 echo "4. Git configurado com sucesso: $(git config --global --list)"
 echo "5. Repositórios clonados com sucesso."
-echo "6. Aplicação .jar ativada."
 
 # Executando o arquivo banco_dados.sh
-echo "Executando o arquivo banco_dados.sh..."
-chmod +x sustentare-data/banco_dados.sh
-./sustentare-data/banco_dados.sh
-
-# Executando o arquivo .jar
-echo "Ativando o arquivo .jar..."
-cd repo-teste-jar
-JAR_FILE=$(find . -name "*.jar" | head -n 1)
-
-if [ -f "$JAR_FILE" ]; then
-    echo "Iniciando o arquivo $JAR_FILE..."
-    java -jar "$JAR_FILE" &
-    echo "Aplicação iniciada com sucesso."
+if [ -f "./banco_dados.sh" ]; then
+    echo "Executando o arquivo banco_dados.sh..."
+    chmod +x ./banco_dados.sh
+    ./banco_dados.sh
 else
-    echo "Nenhum arquivo .jar encontrado no diretório repo-teste-jar."
+    echo "Arquivo banco_dados.sh não encontrado. Pule esta etapa."
 fi
 
+# Ativando aplicação .jar
+if [ -d "sustentare-api" ]; then
+    echo "Verificando arquivos .jar no repositório sustentare-api..."
+    cd sustentare-api
+    JAR_FILE=$(find . -name "*.jar" | head -n 1)
+
+    if [ -f "$JAR_FILE" ]; then
+        echo "Iniciando o arquivo $JAR_FILE..."
+        #java -jar "$JAR_FILE" &
+        echo "Aplicação iniciada com sucesso."
+    else
+        echo "Nenhum arquivo .jar encontrado no diretório sustentare-api."
+    fi
+    cd ..
+else
+    echo "Repositório sustentare-api não encontrado. Pule esta etapa."
+fi
+
+echo "Script concluído!"

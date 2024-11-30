@@ -2,7 +2,7 @@
 
 # Configurações do MySQL
 DB_NAME="projetoSemente"
-DB_USER="sustentare"
+DB_USER="projetoSemente"
 DB_PASS="urubu100"
 SQL_DIR="sustentare-data" # Diretório onde estão os arquivos SQL
 
@@ -20,9 +20,8 @@ fi
 
 # Verifica se o banco de dados existe e cria caso não exista
 echo "Verificando existência do banco de dados $DB_NAME..."
-mysql -u $DB_USER -p$DB_PASS -e "CREATE DATABASE IF NOT EXISTS $DB_NAME;" 2>/dev/null
-if [ $? -ne 0 ]; then
-    echo "Erro ao acessar o MySQL. Verifique o usuário e a senha."
+if ! mysql -u "$DB_USER" -p"$DB_PASS" -e "CREATE DATABASE IF NOT EXISTS $DB_NAME;"; then
+    echo "Erro ao acessar o MySQL ou criar o banco de dados. Verifique o usuário e a senha."
     exit 1
 fi
 echo "Banco de dados $DB_NAME verificado/criado com sucesso."
@@ -38,11 +37,12 @@ fi
 echo "Executando scripts SQL do diretório $SQL_DIR..."
 for script in "$SQL_DIR"/*.sql; do
     echo "Executando $script..."
-    mysql -u $DB_USER -p$DB_PASS $DB_NAME < "$script" 2>/dev/null
-    if [ $? -eq 0 ]; then
+    if mysql -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" < "$script"; then
         echo "Arquivo $script executado com sucesso."
     else
         echo "Erro ao executar $script. Verifique o arquivo."
+        echo "Conteúdo do arquivo $script:"
+        cat "$script"
         exit 1
     fi
 done

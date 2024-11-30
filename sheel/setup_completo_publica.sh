@@ -56,3 +56,13 @@ for repo in "${repos[@]}"; do
 done
 
 echo "Instalação de dependências concluída para todos os repositórios."
+
+echo "Instalando PM2..."
+sudo npm install -g pm2
+
+echo "Instalação do PM2 concluída."
+echo "PM2 versão: $(pm2 -v)"
+
+# Clonando repositórios do Git
+echo "Clonando repositórios do Git..."
+git clone https://github.com/Grupo-2-Sustentare/sustentare-api.git
