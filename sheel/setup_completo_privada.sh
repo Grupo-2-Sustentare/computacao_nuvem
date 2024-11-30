@@ -96,21 +96,21 @@ else
 fi
 
 # Ativando aplicação .jar
-if [ -d "sustentare-api" ]; then
-    echo "Verificando arquivos .jar no repositório sustentare-api..."
-    cd sustentare-api
-    JAR_FILE=$(find . -name "*.jar" | head -n 1)
+# if [ -d "sustentare-api" ]; then
+#     echo "Verificando arquivos .jar no repositório sustentare-api..."
+#     cd sustentare-api
+#     JAR_FILE=$(find . -name "*.jar" | head -n 1)
 
-    if [ -f "$JAR_FILE" ]; then
-        echo "Iniciando o arquivo $JAR_FILE..."
-        #java -jar "$JAR_FILE" &
-        echo "Aplicação iniciada com sucesso."
-    else
-        echo "Nenhum arquivo .jar encontrado no diretório sustentare-api."
-    fi
-    cd ..
-else
-    echo "Repositório sustentare-api não encontrado. Pule esta etapa."
-fi
+#     if [ -f "$JAR_FILE" ]; then
+#         echo "Iniciando o arquivo $JAR_FILE..."
+#         #java -jar "$JAR_FILE" &
+#         echo "Aplicação iniciada com sucesso."
+#     else
+#         echo "Nenhum arquivo .jar encontrado no diretório sustentare-api."
+#     fi
+#     cd ..
+# else
+#     echo "Repositório sustentare-api não encontrado. Pule esta etapa."
+# fi
 
 echo "Script concluído!"
